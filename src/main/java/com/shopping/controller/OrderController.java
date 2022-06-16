@@ -80,4 +80,31 @@ public class OrderController {
 
         return "order/orderHist" ;
     }
+
+    @PostMapping(value = "/order/{orderId}/cancel")
+    public @ResponseBody ResponseEntity cancelOrder(
+            @PathVariable("orderId") Long orderId,
+            Principal principal
+        ){
+        String email = principal.getName() ;
+
+        if(!orderService.validateOrder(orderId, email)){
+            return new ResponseEntity<String>("주문 취소 권한이 없습니다.", HttpStatus.FORBIDDEN) ;
+        }
+        orderService.cancelOrder(orderId); // 주문 취소 로직 호출
+        return new ResponseEntity<Long>(orderId, HttpStatus.OK) ; // 성공적인 http 응답
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

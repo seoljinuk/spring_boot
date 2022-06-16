@@ -63,4 +63,9 @@ public class Item extends BaseEntity {
         // 재고가 충분하므로 주문된 후 남은 재고량으로 갱신
         this.stockNumber = restStock ;
     }
+
+    // 주문 취소시 해당 상품의 재고 수량을 증가시킵니다.
+    public void addStock(int stockNumber){
+        this.stockNumber += stockNumber ;
+    }
 }

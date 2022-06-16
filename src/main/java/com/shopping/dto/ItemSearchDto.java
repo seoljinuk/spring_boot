@@ -4,9 +4,10 @@ package com.shopping.dto;
 import com.shopping.constant.ItemSellStatus;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 // 상품 검색 조건을 저장하고 있는 dto
-@Getter @Setter
+@Getter @Setter @ToString
 public class ItemSearchDto {
     private String searchDateType ; // 조회 기간 범위
     private ItemSellStatus searchSellStatus ; // 판매중/품절 중 2가지 모드 중에서 택일
