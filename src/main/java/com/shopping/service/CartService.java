@@ -1,5 +1,6 @@
 package com.shopping.service;
 
+import com.shopping.dto.CartDetailDto;
 import com.shopping.dto.CartItemDto;
 import com.shopping.entity.Cart;
 import com.shopping.entity.CartItem;
@@ -11,8 +12,12 @@ import com.shopping.repository.ItemRepository;
 import com.shopping.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.util.StringUtils;
 
 import javax.persistence.EntityNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
 // @RequiredArgsConstructor를 작성해 두면, 생성자를 통하여 해당 변수에 값을 주입해줍니다.
 // @Autowired는 주로 변수에 작성하는 데, setter을 이용하여 주입해 줍니다.
@@ -56,4 +61,68 @@ public class CartService {
             return cartItem.getId();
         }
     }
+
+    // 로그인 한 사람의 email 정보를 이용하여 당사자의 카트에 들어 있는 상품 목록을 조회합니다.
+    @Transactional(readOnly = true)
+    public List<CartDetailDto> getCartList(String email){
+
+        // email을 사용하여 해당 회원이 누구인지 파악합니다.
+        Member member = memberRepository.findByEmail(email) ;
+
+        // 로그인 한 사용자의 장바구니 정보를 읽어 들입니다.
+        Cart cart = cartRepository.findByMemberId(member.getId()) ;
+
+        List<CartDetailDto> cartDetailDtoList = new ArrayList<>() ;
+
+        if(cart == null){ // 카트 준비가 안 된 경우
+            return cartDetailDtoList ; // return empty cartList
+        }else{
+            Long cartId = cart.getId() ;
+            cartDetailDtoList = cartItemRepository.findCartDetailDtoList(cartId) ;
+            return cartDetailDtoList ;
+        }
+    }
+
+    // 로그인 한 회원과 장바구니 상품을 저장한 회원이 동일한지 체크하는 메소드
+    @Transactional(readOnly = true)
+    public boolean validateCartItem(Long cartItemId, String email){
+        // 이메일을 사용하여 로그인 한 회원의 정보를 취득합니다.
+        Member curMember = memberRepository.findByEmail(email) ;
+
+        // 카트 상품 아이디를 사용하여 CartItem 정보를 취득합니다.
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                                .orElseThrow(EntityNotFoundException::new);
+
+        // 해당 Cart가 누구의 Cart인지 확인합니다.
+        Member savedMember = cartItem.getCart().getMember() ;
+
+        // 동일한 사람이면 true를 반환해 줍니다.
+        return StringUtils.equals(curMember.getEmail(), savedMember.getEmail()) ;
+    }
+
+    // 장바구니의 수량을 업데이트해주는 메소드입니다.
+    public void updateCartItemCount(Long cartItemId, int count){
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                                .orElseThrow(EntityNotFoundException::new) ;
+        cartItem.updateCount(count);
+        cartItemRepository.save(cartItem);
+    }
+
+    // 카트에 들어 있는 특정 상품의 id를 이용하여, 카트 목록에서 상품을 삭제합니다.
+    public void deleteCartItem(Long cartItemId){
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                                .orElseThrow(EntityNotFoundException::new);
+        cartItemRepository.delete(cartItem);
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
