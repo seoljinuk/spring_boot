@@ -2,6 +2,7 @@ package com.shopping.controller;
 
 import com.shopping.dto.CartDetailDto;
 import com.shopping.dto.CartItemDto;
+import com.shopping.dto.CartOrderDto;
 import com.shopping.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,6 +66,8 @@ public class CartController {
     public @ResponseBody ResponseEntity updateCartItem(
             @PathVariable("cartItemId") Long cartItemId, int count, Principal principal
         ){
+        System.out.println("count : "+ count);
+
         if(count <= 0){
             return new ResponseEntity<String>("최소 1개 이상 담아주세요.", HttpStatus.BAD_REQUEST) ;
 
@@ -88,6 +91,36 @@ public class CartController {
         cartService.deleteCartItem(cartItemId);
 
         return new ResponseEntity<Long>(cartItemId, HttpStatus.OK) ;
+    }
+
+    // html 문서에서 "주문하기" 버튼을 클릭하였습니다.
+    @PostMapping(value = "/cart/orders")
+    public @ResponseBody ResponseEntity orderCartItem(
+            @RequestBody CartOrderDto cartOrderDto,
+            Principal principal
+        ){
+
+        List<CartOrderDto> cartOrderDtoList = cartOrderDto.getCartOrderDtoList() ;
+
+        // 주문 상품을 선택하지 않았는지 체크합니다.
+        if(cartOrderDtoList == null || cartOrderDtoList.size() == 0){
+            return new ResponseEntity<String>("주문한 상품을 선택해 주세요.", HttpStatus.FORBIDDEN) ;
+        }
+
+        String email = principal.getName() ;
+
+        for(CartOrderDto cartOrder :cartOrderDtoList){
+            Long cartItemId = cartOrder.getCartItemId() ;
+            if(!cartService.validateCartItem(cartItemId, email)){ // 주문 가능한지 권한 체크
+                return new ResponseEntity<String>("주문 권한이 없습니다.", HttpStatus.FORBIDDEN) ;
+            }
+        }
+
+        // 주문 로직을 호출하고, 주문 번호를 반환 받습니다.
+        Long orderId = cartService.orderCartItem(cartOrderDtoList, email);
+
+        // 주문 번호와 함께 리턴하기
+        return new ResponseEntity<Long>(orderId, HttpStatus.OK) ;
     }
 }
 

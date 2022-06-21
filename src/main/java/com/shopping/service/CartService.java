@@ -2,6 +2,8 @@ package com.shopping.service;
 
 import com.shopping.dto.CartDetailDto;
 import com.shopping.dto.CartItemDto;
+import com.shopping.dto.CartOrderDto;
+import com.shopping.dto.OrderDto;
 import com.shopping.entity.Cart;
 import com.shopping.entity.CartItem;
 import com.shopping.entity.Item;
@@ -113,6 +115,35 @@ public class CartService {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                                 .orElseThrow(EntityNotFoundException::new);
         cartItemRepository.delete(cartItem);
+    }
+
+    private final OrderService orderService ;
+
+    public Long orderCartItem(List<CartOrderDto> cartOrderDtoList, String email){
+        List<OrderDto> orderDtoList = new ArrayList<>() ;
+        for(CartOrderDto cartOrderDto : cartOrderDtoList){
+            CartItem cartItem = cartItemRepository.findById(cartOrderDto.getCartItemId())
+                                    .orElseThrow(EntityNotFoundException::new);
+
+            // OrderDto는 상품의 id와 수량 정보를 담고 있는 클래스입니다.
+            OrderDto orderDto = new OrderDto();
+
+            orderDto.setItemId(cartItem.getItem().getId());
+            orderDto.setCount(cartItem.getCount());
+
+            orderDtoList.add(orderDto) ;
+        }
+
+        // 장바구니에 담은 상품들을 주문하기 위하여 주문 로직을 호출합니다.
+        Long orderId = orderService.orders(orderDtoList, email);
+
+        // 주문된 상품들은 장바구니 목록에서 제거 되어야 합니다.
+        for(CartOrderDto cartOrderDto : cartOrderDtoList){
+            CartItem cartItem = cartItemRepository.findById(cartOrderDto.getCartItemId())
+                    .orElseThrow(EntityNotFoundException::new);
+            cartItemRepository.delete(cartItem);
+        }
+        return orderId ;
     }
 }
 

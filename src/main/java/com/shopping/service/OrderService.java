@@ -110,6 +110,32 @@ public class OrderService {
                         .orElseThrow(EntityNotFoundException::new);
         order.cancelOrder();
     }
+
+    // 장바구니 목록에서 선택된 상품 데이터 목록을 전달 받아서 주문을 처리해주는 로직을 구현합니다.
+    public Long orders(List<OrderDto> orderDtoList, String email){
+        // OrderDto는 상품 id와 주문 수량을 저장하고 있는 객체입니다.
+        // orderDtoList는 주문할 상품과 수량 정보를 담고 있는 컬렉션입니다.
+        Member member = memberRepository.findByEmail(email) ;
+
+        // 주문할 상품 리스트를 담아 두기 위한 Entity 컬렉션입니다.
+        // from dto collection
+        List<OrderItem> orderItemList = new ArrayList<>() ;
+
+        for(OrderDto orderDto : orderDtoList){
+            Item item = itemRepository.findById(orderDto.getItemId())
+                            .orElseThrow(EntityNotFoundException::new);
+
+            OrderItem orderItem = OrderItem.createOrderItem(item, orderDto.getCount());
+
+            orderItemList.add(orderItem) ;
+        }
+        // 로그인한 사람의 정보와 주문 상품 목록을 이용하여 Order Entity를 생성합니다.
+        Order order = Order.createOrder(member, orderItemList);
+        orderRepository.save(order) ;
+
+        return order.getId();
+    }
+
 }
 
 
